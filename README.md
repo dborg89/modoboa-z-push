@@ -11,6 +11,11 @@ This script is designed to installed Z-Push on a fresh Modoboa system (and repla
 - PHP FPM
 - Z-Push
 
+**How to run**
+
+Copy the following line into your terminal: 
+> curl -L https://raw.githubusercontent.com/dborg89/modoboa-z-push/main/install-zpush.sh |bash
+
 **What do I do if the install breaks my NginX config?**
 
 Simple, cd into the nginx sites-available DIR and move the backup files (denoted with .bkup-<DATE>) into the original names
