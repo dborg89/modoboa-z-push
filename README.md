@@ -1,4 +1,4 @@
-This script is designed to installed Z-Push on a fresh Modoboa system (and replace automx).
+This script is designed to install Z-Push on a fresh Modoboa system (and replace automx).
 
 **Requirements:**
 
