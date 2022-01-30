@@ -31,11 +31,14 @@ chown www-data:modoboa -R /srv/z-push
 echo -e "Lets edit these Configs to work on Modoboa's setup"
 sed -i "s/\/var\/lib\/z-push/\/srv\/z-push/g" /srv/z-push/config.php
 sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackendIMAP'/g" /srv/z-push/config.php
+sed -i "s/USE_FULLEMAIL_FOR_LOGIN', false/USE_FULLEMAIL_FOR_LOGIN', true/g" /srv/z-push/config.php
+sed -i "s/STATE_DIR', '\/var\/lib\/z-push\//STATE_DIR', '\/srv\/z-push\/lib\//g" /srv/z-push/config.php
 sed -i "s/IMAP_PORT', 143/IMAP_PORT', 993/g" /srv/z-push/backend/imap/config.php
 sed -i "s/IMAP_OPTIONS', '\/notls\/norsh/IMAP_OPTIONS', '\/ssl\/novalidate-cert/g" /srv/z-push/backend/imap/config.php
 sed -i "s/IMAP_FOLDER_CONFIGURED', false/IMAP_FOLDER_CONFIGURED', true/g" /srv/z-push/backend/imap/config.php
 sed -i "s/IMAP_FOLDER_SPAM', 'SPAM'/IMAP_FOLDER_SPAM', 'JUNK'/g" /srv/z-push/backend/imap/config.php
 sed -i "s/USE_FULLEMAIL_FOR_LOGIN', false/USE_FULLEMAIL_FOR_LOGIN', true/g" /srv/z-push/autodiscover/config.php
+sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackendIMAP'/g" /srv/z-push/autodiscover/config.php
 
 echo -e "Time to edit the NignX configs"
 cd /etc/nginx/sites-available
@@ -61,7 +64,6 @@ server {
 
     # Z-Push (Microsoft Exchange ActiveSync)
     location /Microsoft-Server-ActiveSync {
-
         include /etc/nginx/fastcgi_params;
         fastcgi_pass unix:$phpfpmpath;
         fastcgi_param SCRIPT_FILENAME /srv/z-push/index.php;
@@ -71,7 +73,7 @@ server {
         client_max_body_size 128M;
     }
 
-     # Z-Push (Auto Discover)
+    # Z-Push Z-Push (Auto Discover)
     location ~* ^/autodiscover/autodiscover.xml$ {
         include /etc/nginx/fastcgi_params;
         fastcgi_pass unix:$phpfpmpath;
@@ -90,23 +92,22 @@ sed -i "2 i \# Config edited for z-Push `date +%F-%T.%s`\n" /etc/nginx/sites-ava
 
 echo -e "Inserting new "
 sed -i "\$i\
-\   # Z-Push (Microsoft Exchange ActiveSync)\n\
+\    # Z-Push (Microsoft Exchange ActiveSync)\n\
     location /Microsoft-Server-ActiveSync {\n\
-\n\
         include /etc/nginx/fastcgi_params;\n\
         fastcgi_pass unix:$phpfpmpath;\n\
         fastcgi_param SCRIPT_FILENAME /srv/z-push/index.php;\n\
-        fastcgi_param PHP_VALUE \"include_path=.:/usr/share/php:/usr/share/pear\";\n\
+        fastcgi_param PHP_VALUE "include_path=.:/usr/share/php:/usr/share/pear";\n\
         fastcgi_read_timeout 630;\n\
         client_max_body_size 128M;\n\
     }\n\
 \n\
     # Z-Push Z-Push (Auto Discover)\n\
     location ~* ^/autodiscover/autodiscover.xml$ {\n\
+        include /etc/nginx/fastcgi_params;\n\
         fastcgi_pass unix:$phpfpmpath;\n\
-        fastcgi_param SCRIPT_FILENAME /srv/z-push/index.php;\n\
-        fastcgi_param PHP_VALUE \"include_path=.:/usr/share/php:/usr/share/pear\";\n\
-        fastcgi_read_timeout 630;\n\
+        fastcgi_param SCRIPT_FILENAME /srv/z-push/autodiscover/autodiscover.php;\n\
+        fastcgi_param PHP_VALUE "include_path=.:/usr/share/php:/usr/share/pear";\n\
     }\n\
 " /etc/nginx/sites-available/mail.$tld.conf
 
