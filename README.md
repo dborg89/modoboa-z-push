@@ -22,8 +22,8 @@ Simple, cd into the nginx sites-available DIR and move the backup files (denoted
   
 **Do you provide support or warranty?**
   
-- Warranty - NO. Use at your own risk
-- Support - Maybe, depends if I am online.
+- Warranty - **NO.** Use at your own risk.
+- Support - *Maybe*, depends if I am online.
   
 **How do I request support?**
   
