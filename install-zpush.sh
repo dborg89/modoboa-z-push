@@ -34,6 +34,8 @@ sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackendIMAP'/g" /srv/z-push/
 sed -i "s/IMAP_PORT', 143/IMAP_PORT', 993/g" /srv/z-push/backend/imap/config.php
 sed -i "s/IMAP_OPTIONS', '\/notls\/norsh/IMAP_OPTIONS', '\/ssl\/novalidate-cert/g" /srv/z-push/backend/imap/config.php
 sed -i "s/IMAP_FOLDER_CONFIGURED', false/IMAP_FOLDER_CONFIGURED', true/g" /srv/z-push/backend/imap/config.php
+sed -i "s/IMAP_FOLDER_SPAM', 'SPAM'/IMAP_FOLDER_SPAM', 'JUNK'/g" /srv/z-push/backend/imap/config.php
+sed -i "s/USE_FULLEMAIL_FOR_LOGIN', false/USE_FULLEMAIL_FOR_LOGIN', true/g" /srv/z-push/autodiscover/config.php
 
 echo -e "Time to edit the NignX configs"
 cd /etc/nginx/sites-available
