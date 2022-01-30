@@ -3,6 +3,14 @@
 # This script is very messy and basic, calendar is not tested and is only set up to get easy configuration to mobile and outlook clients.
 # No support provided, however someone in https://discord.gg/WuQ3v3PXGR might be able to help?
 
+# Pre-flight check to see if Modoboa's default NginX config have been removed
+tld=`awk -F "[, ]+" '/server_name/{print substr($3, 12, length($3)-12)}' /etc/nginx/sites-available/autoconfig.*.conf`
+if [ "$tld" = "" ];
+then
+        echo "No Domain found, please enter a domain (note: must be DOMAIN.TLD format and not include subdomain)"
+        read -p "Domain: " tld
+fi
+
 echo -e "Install PHP dependencies"
 apt install -y php-fpm php-mbstring php-imap php-soap php-common php-xsl
 phpenmod -v ALL imap
@@ -42,8 +50,7 @@ sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackendIMAP'/g" /srv/z-push/
 
 echo -e "Time to edit the NignX configs"
 cd /etc/nginx/sites-available
-tld=`awk -F "[, ]+" '/server_name/{print substr($3, 12, length($3)-12)}' /etc/nginx/sites-available/autoconfig.*.conf`
-phpfpmpath=`find /run/php/ -name "*sock"`
+phpfpmpath=`find /run/php/ -name "php*-fpm.sock" |head -n 1`
 
 echo -e "Backing up the NginX configs \n"
 cp -a /etc/nginx/sites-available/autoconfig.$tld.conf /etc/nginx/sites-available/autoconfig.$tld.conf.bkup-`date +"%F-%T"`
@@ -74,7 +81,7 @@ server {
     }
 
     # Z-Push Z-Push (Auto Discover)
-    location ~* ^/autodiscover/autodiscover.xml$ {
+    location ~* ^/autodiscover/autodiscover.xml {
         include /etc/nginx/fastcgi_params;
         fastcgi_pass unix:$phpfpmpath;
         fastcgi_param SCRIPT_FILENAME /srv/z-push/autodiscover/autodiscover.php;
@@ -84,7 +91,6 @@ server {
 
 echo -e "Time to edit the main Mail config (HTTPS/443)"
 echo -e "Search for the old automx settings and comment them out"
-
 sed -i -r "/location/{/\n/{P;D;};:1;N; /\}/!b1;/automx/s/[^\n]*\n*\n*/#&/g}" /etc/nginx/sites-available/mail.$tld.conf
 
 echo -e "Inserting Date into line 2"
