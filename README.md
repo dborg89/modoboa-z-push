@@ -14,7 +14,7 @@ This script is designed to install Z-Push on a fresh Modoboa system (and replace
 **How to run**
 
 Copy the following line into your terminal: 
-> curl -L https://raw.githubusercontent.com/dborg89/modoboa-z-push/main/install-zpush.sh |bash
+> curl https://raw.githubusercontent.com/dborg89/modoboa-z-push/main/install-zpush.sh |bash
 
 **What do I do if the install breaks my NginX config?**
 
