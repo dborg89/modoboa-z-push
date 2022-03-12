@@ -12,33 +12,31 @@ then
 fi
 
 echo -e "Install PHP dependencies"
-apt install -y php-fpm php-mbstring php-imap php-soap php-common php-xsl
+apt install -y php-fpm php-mbstring php-imap php-soap php-common php-xsl php-curl libawl-php wget -y
 phpenmod -v ALL imap
 phpenmod -v ALL mbstring
 phpenmod -v ALL soap
 phpenmod -v ALL xsl
+phpenmod -v ALL curl
 
 echo -e "Download Z-Push"
 cd /tmp/
-wget -O /tmp/z-push.zip https://github.com/Z-Hub/Z-Push/archive/refs/tags/2.6.4.zip
+wget -O /tmp/z-push.zip https://github.com/bob4os/Z-Push/archive/refs/heads/develop.zip
 
 echo -e "Extract and move Z-Push into /srv/"
 unzip /tmp/z-push.zip -d /tmp/
-mv /tmp/Z-Push*/src /srv/z-push
-rm -rf /tmp/Z-Push* /tmp/z-push.zip
+mv /tmp/Z-Push-develop/src /srv/z-push
+rm -rf /tmp/Z-Push-develop /tmp/z-push.zip
 
 echo -e "Create log dir and set permissions"
 mkdir /var/log/z-push
 chown www-data:adm /var/log/z-push
 chmod 755 /var/log/z-push
 
-echo -e "Setting Ownership to modoboa"
-chown www-data:modoboa -R /srv/z-push
-
-
 echo -e "Lets edit these Configs to work on Modoboa's setup"
 sed -i "s/\/var\/lib\/z-push/\/srv\/z-push/g" /srv/z-push/config.php
-sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackendIMAP'/g" /srv/z-push/config.php
+sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackenCombined'/g" /srv/z-push/config.php
+sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackenCombined'/g" /srv/z-push/autodiscover/config.php
 sed -i "s/USE_FULLEMAIL_FOR_LOGIN', false/USE_FULLEMAIL_FOR_LOGIN', true/g" /srv/z-push/config.php
 sed -i "s/STATE_DIR', '\/var\/lib\/z-push\//STATE_DIR', '\/srv\/z-push\/lib\//g" /srv/z-push/config.php
 sed -i "s/IMAP_PORT', 143/IMAP_PORT', 993/g" /srv/z-push/backend/imap/config.php
@@ -46,7 +44,29 @@ sed -i "s/IMAP_OPTIONS', '\/notls\/norsh/IMAP_OPTIONS', '\/ssl\/novalidate-cert/
 sed -i "s/IMAP_FOLDER_CONFIGURED', false/IMAP_FOLDER_CONFIGURED', true/g" /srv/z-push/backend/imap/config.php
 sed -i "s/IMAP_FOLDER_SPAM', 'SPAM'/IMAP_FOLDER_SPAM', 'JUNK'/g" /srv/z-push/backend/imap/config.php
 sed -i "s/USE_FULLEMAIL_FOR_LOGIN', false/USE_FULLEMAIL_FOR_LOGIN', true/g" /srv/z-push/autodiscover/config.php
-sed -i "s/BACKEND_PROVIDER', ''/BACKEND_PROVIDER', 'BackendIMAP'/g" /srv/z-push/autodiscover/config.php
+sed -i "s/CALDAV_SERVER', 'caldavserver.domain.com'/CALDAV_SERVER', 'localhost'/g" /srv/z-push/backend/caldav/config.php
+sed -i "s/CALDAV_PATH', '\/caldav.php/CALDAV_PATH', '\/radicale/g" /srv/z-push/backend/caldav/config.php
+sed -i "s/CALDAV_SUPPORTS_SYNC', false/CALDAV_SUPPORTS_SYNC', true/g" /srv/z-push/backend/caldav/config.php
+sed -i "s/CARDDAV_PATH', '\/caldav.php/CARDDAV_PATH', '\/radicale/g" /srv/z-push/backend/carddav/config.php
+sed -i "s/CARDDAV_DEFAULT_PATH', '\/caldav.php\/%u\/addresses/CARDDAV_DEFAULT_PATH', '\/radicale\/%u\/contacts/g" /srv/z-push/backend/carddav/config.php
+sed -i "s/CARDDAV_SUPPORTS_SYNC', false/CARDDAV_SUPPORTS_SYNC', true/g" /srv/z-push/backend/carddav/config.php
+sed -i "s/\$val = stream_get_contents(\$message->asbody->data);/\$val = \$this->escape(stream_get_contents(\$message->asbody->data));/g" /srv/z-push/backend/carddav/carddav.php
+
+cp -a /srv/z-push/backends/combined/config.php /srv/z-push/backends/combined/config.php.old
+wget -O /srv/z-push/backends/combined/config.php https://raw.githubusercontent.com/dborg89/modoboa-z-push/main/backend_combined_config.php
+
+cp -a /srv/z-push/include/z_carddav.php /srv/z-push/include/z_carddav.php.old
+wget -O /srv/z-push/include/z_carddav.php https://raw.githubusercontent.com/dborg89/modoboa-z-push/main/include_z_carddav.php
+
+echo -e "Setting Ownership to www-data"
+chown www-data:www-data -R /srv/z-push
+
+echo -e "Lets setup a generic calendar creation script to ensure that everyone gets the same calendar name"
+wget -O /srv/modoboa/env/lib/python3.9/site-packages/calsync.py https://raw.githubusercontent.com/dborg89/radicale_create/main/calsync.py
+chown modoboa: /srv/modoboa/env/lib/python3.9/site-packages/calsync.py
+sed -i "7 i PACKAGES=/srv/modoboa/env/lib/python3.9/site-packages" /etc/cron.d/modoboa
+echo -e "\n# Generic calendar creation script" >> /etc/cron.d/modoboa
+echo -e "*/5\t*\t*\t*\t*\troot\t\$PYTHON \$PACKAGES/calsync.py >/dev/null 2>&1" >> /etc/cron.d/modoboa
 
 echo -e "Time to edit the NignX configs"
 cd /etc/nginx/sites-available
